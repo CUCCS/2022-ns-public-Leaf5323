@@ -58,7 +58,7 @@
 
 #### Multiattach Set Up
 
-首先从来没有听说过`多重加载`这个名词，真白玩了那么久虚拟机，由于不确定翻译于是用直接咕咕噜中文`virtualbox 多重加载`，然后通过某个搜索结果进入的博客转载页面找到了CSDN的原文😓，了解了一下操作流程，大致分为以下两步：
+首先从来没有听说过`多重加载`这个名词，真白玩了那么久虚拟机，由于不确定翻译于是用直接咕咕噜中文`virtualbox 多重加载`，然后通过某个搜索结果进入的博客转载网站找到了CSDN的原文😓，了解了一下操作流程，大致分为以下两步：
 
 1. 在VirtualBox菜单栏中的`管理`>`虚拟介质管理`中找到目标介质
 
@@ -107,6 +107,43 @@
 - 网卡4：内部网络`intnet1`，用于路由`Internal Network 2`
 
 最后是攻击者主机部分，这个显然是只连接了外网所以只需要配置一张NAT方式的网卡即可
+
+这里其实有一点`散装黑盒`的意思：由于直接导入使用了老师提供的磁盘介质，整个系统的安装与配置过程并不是由我完成，在完成这部分配置的过程中我所出的力仅在于`新建虚拟机`+`按需设置网卡`，而关于网关设备`gateway-debian`系统内最初的网卡硬件固定IP地址分配与两个内网对于外网攻击者`attacker-kali`的屏蔽分流两部分内容则是没有在意，磁盘介质完全是被当作黑盒直接拿来使用了😂
+
+配置完成之后这里分别放上6台虚拟机的系统内IP配置，应该就足以说明网络的配置情况了：
+
+Virtual Machine|IP Configuration
+:-:|:-:
+attacker-kali|![screenShot](./img/attackerKaliIP.png)
+gateway-debian|![screenShot](./img/gatewayDebianIP.png)
+victim-kali|![screenShot](./img/victimKaliIP.png)
+victim-xp-1|![screenShot](./img/victimXP1IP.png)
+victim-debian|![screenShot](./img/victimDebianIP.png)
+victim-xp-2|![screenShot](./img/victimXP2IP.png)
+
+### 网络连通性目标要求实现
+
+众所周知：
+
+>连通性=能`ping`通
+
+所以以下的连通性相关目标测试均通过这条古老但是有效的命令实现
+
+#### 靶机可以直接访问攻击者主机
+
+翻译一下，需要4台靶机能ping通攻击者主机`attacker-kali`
+
+首先从上一步的操作中得知`attacker-kali`的IP地址是`10.0.2.15`，由于Windows系统默认只执行4次ping包发送，于是计划在4台靶中的Linux机器中执行ping命令时也添加`-c 4`来限制ping次数
+
+(电脑死机了，到这里是之前写的内容，好多证明用的虚拟机状态无了，晚点再继续写)
+
+#### 攻击者主机无法直接访问靶机
+
+#### 网关可以直接访问攻击者主机和靶机
+
+#### 靶机的所有对外上下行流量必须经过网关
+
+#### 所有节点均可以访问互联网
 
 ## 总结
 
