@@ -158,6 +158,42 @@ victim-xp-1|![screenShot](./img/victimXP1PingAttacker.png)
 victim-debian|![screenShot](./img/victimDebianPingAttacker.png)
 victim-xp-2|![screenShot](./img/victimXP2PingAttacker.png)
 
+>2022/9/19 Update  
+>挺早就看完了实验的讲解视频，也很早在PR里面追加了要修改这部分内容的评论，正式修改终于还是拖到了DDL😶
+
+需要修正的部分是有关`attacker-kali`和`gateway-debian`两台机器的外网网卡配置，这里用追加的形式继续进行记录
+
+前文的内容可以说明，我自己捣鼓的配置是完全踩坑到NAT网卡上，这里放上VirtualBox官网文档对网卡功能性的描述，非常直观：
+
+>Table 6.1. Overview of Networking Modes  
+>Mode|VM→Host|VM←Host|VM1↔VM2|VM→Net/LAN|VM←Net/LAN
+>:-:|:-:|:-:|:-:|:-:|:-:
+>Host-only|+|+|+|-|-
+>Internal|-|-|+|-|-
+>Bridged|+|+|+|+|+
+>NAT|+|[Port forward](https://www.virtualbox.org/manual/ch06.html#natforward)|-|+|[Port forward](https://www.virtualbox.org/manual/ch06.html#natforward)
+>NATservice|+|[Port forward](https://www.virtualbox.org/manual/ch06.html#natforward)|+|+|[Port forward](https://www.virtualbox.org/manual/ch06.html#natforward)
+
+当然视频里面也有讲到，NAT相当于每台虚拟机连接到不同的交换机上，而NAT网络则是可以通过配置不同的NAT网络标识来实现多台虚拟机连接到同一台交换机上，于是这次修正的具体操作是在VirtualBox的`管理`>`全局设置`>`网络`内新建一个NAT网络`NatNetwork1`，分配网段为`10.0.3.0/24`，而原有的`NatNetwork`则不改变原分配的网段`10.0.2.0/24`，但是要改名为`NatNetwork0`(一些强迫症的道理😂)，具体配置可以看下面的截图：
+
+NAT Network|Configuration Screenshot
+:-:|:-:
+NatNetwork0|![screenShot](./img/nat0.png)
+NatNetwork1|![screenShot](./img/nat1.png)
+
+然后是修改`attacker-kali`仅有的一块的网卡为`NAT网络，'NatNetwork1'`，而`gateway-debian`则是将原本的NAT网卡改为`NAT网络，'NatNetwork0'`，其他配置不变，目标仍然是让`attacker-kali`能够被4台靶机访问到，操作也仍然是4台靶机分别ping`attacker-kali`的IP...
+
+很显然到这里我才发现前面的理解出了大问题，之所以能发现也是因为按照上面的思路配置之后发现两个NAT网络的虚拟机并不能互相ping通，大概查了一些关于不同NAT网络之间连通性的内容后发现还是回到上面的`Table 6.1. Overview of Networking Modes`，也就是需要端口转发来实现，所以我又重新看了一下实验讲解的视频，发现其实是配置在同一个NAT网络上就行了，所以上面设置好的两个NAT网络就留一个吃灰吧，现在只需要给`attacker-kali`和`gateway-debian`分配到同一个NAT网络就行，重启虚拟机后发现一切正常，关于两台使用NAT网络的虚拟机的IP，`attacker-kali`仍然是之前的`10.0.2.15`，`gateway-debian`则变成了`10.0.2.4`
+
+以下是新的连通性测试截图：
+
+Victim|Screenshot
+:-:|:-:
+victim-kali|![screenShot](./img/newVictimKaliPingAttacker.png)
+victim-xp-1|![screenShot](./img/newVictimXP1PingAttacker.png)
+victim-debian|![screenShot](./img/newVictimDebianPingAttacker.png)
+victim-xp-2|![screenShot](./img/newVictimXP2PingAttacker.png)
+
 #### 攻击者主机无法直接访问靶机
 
 思路上很好理解，从`attacker-kali`无法ping通4台靶机，操作上则是分别在4台靶机上获取外网IP，随后在`attacker-kali`上发送ping包，仍然是使用`-c 4`来限制ping次数为4次，以下为结果截图：
@@ -313,3 +349,7 @@ gateway-debian|![screenShot](./img/gatewayPingBaidu.png)
 - [Windows XP配置方法](http://ipv6.ustb.edu.cn/config_winxp.html)
 
 - [How to install kernel headers on Debian](https://linuxhint.com/install-kernel-headers-debian/)
+
+- [Chapter 6. Virtual Networking](https://www.virtualbox.org/manual/ch06.html)
+
+- [VirtualBox Network Settings: Complete Guide](https://www.nakivo.com/blog/virtualbox-network-setting-guide/)
