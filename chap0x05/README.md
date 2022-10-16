@@ -6,7 +6,7 @@
 
 - 完成以下扫描技术的编程实现
 
-  - [ ] TCP connect scan / TCP stealth scan
+  - [x] TCP connect scan / TCP stealth scan
 
   - [ ] TCP Xmas scan / TCP fin scan / TCP null scan
 
