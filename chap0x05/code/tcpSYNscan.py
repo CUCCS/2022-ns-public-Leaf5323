@@ -11,20 +11,22 @@ def createRSTpacket(destinationIP,destinationPort):
     return packet
 
 def tcpSYNscan(targetIP,targetPort):
+    print("⫸ Seding TCP SYN packet...")
     SYNpacket=createSYNpacket(destinationIP=targetIP,destinationPort=targetPort)
     gotAnswer=ss.sr1(SYNpacket,timeout=10)
     if not gotAnswer:
-        print("Port "+targetPort+": Filtered")
+        print("⫸ Port "+targetPort+": Filtered")
     elif gotAnswer.getlayer(sli.TCP).flags=='RA':
-        print("Port "+targetPort+": Closed")
+        print("⫸ Port "+targetPort+": Closed")
     elif gotAnswer.getlayer(sli.TCP).flags=='SA':
+        print("⫸ Port "+targetPort+": Open")
+        print("⫸ Sending TCP RST packet...")
         RSTpacket=createRSTpacket(targetIP,targetPort)
-        ss.send(RSTpacket)
-        print("Port "+targetPort+": Open")
+        ss.send(RSTpacket) 
 
 if __name__=='__main__':
     if len(argv)<2:
+        print("ATTENTION: Super User Privilege required!!!")
         print("Usage: python tcpSYNscan.py [target IP] [target port]")
     else:
-        targetIP,targetPort=argv[1],argv[2]
-        tcpSYNscan(targetIP,targetPort)
+        tcpSYNscan(targetIP=argv[1],targetPort=argv[2])

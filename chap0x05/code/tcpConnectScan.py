@@ -15,22 +15,25 @@ def createACKpacket(destinationIP,destinationPort):
     return packet
 
 def tcpConnectScan(targetIP,targetPort):
+    print("⫸ Sending TCP SYN packet...")
     SYNpacket=createSYNpacket(destinationIP=targetIP,destinationPort=targetPort)
     gotAnswer=ss.sr1(SYNpacket,timeout=10)
     if not gotAnswer:
-        print("Port "+targetPort+": Filtered")
+        print("⫸ Port "+targetPort+": Filtered")
     elif gotAnswer.getlayer(sli.TCP).flags=='RA':
-        print("Port "+targetPort+": Closed")
+        print("⫸ Port "+targetPort+": Closed")
     elif gotAnswer.getlayer(sli.TCP).flags=='SA':
+        print("⫸ Sending TCP ACK packet...")
         ACKpacket=createACKpacket(targetIP,targetPort)
         ss.send(ACKpacket)
+        print("⫸ Port "+targetPort+": Open")
+        print("⫸ Sending TCP RST packet...")
         RSTpacket=createRSTpacket(targetIP,targetPort)
         ss.send(RSTpacket)
-        print("Port "+targetPort+": Open")
 
 if __name__=='__main__':
     if len(argv)<2:
+        print("ATTENTION: Super User Privilege required!!!")
         print("Usage: python tcpConnectScan.py [target IP] [target port]")
     else:
-        targetIP,targetPort=argv[1],argv[2]
-        tcpConnectScan(targetIP,targetPort)
+        tcpConnectScan(targetIP=argv[1],targetPort=argv[2])
