@@ -119,7 +119,7 @@ iface enp0s10 inet static #下面的enp0s10网卡配置和上面的enp0s9几乎�
   post-down iptables -I FORWARD -s '172.16.222.0/24' -d '172.16.111.0/24' -i enp0s10 -j DROP
 ```
 
-另外觉得必须`iptables`中有关--tcp-flags的解读，这里放上让我搞明白--tcp-flags工作原理的解释原文：
+另外觉得必须说说`iptables`中有关--tcp-flags的解读，这里放上让我搞明白--tcp-flags工作原理的解释原文：
 
 >[!] --tcp-flags mask comp  
 >Match  when  the TCP flags are as specified.  The first argument mask is the flags which we should examine, written as a comma-separated list, and the second argument comp is a comma-separated list of flags which must be set.  Flags are: SYN ACK FIN RST URG PSH ALL NONE.  Hence the command iptables -A FORWARD -p tcp --tcp-flags SYN,ACK,FIN,RST SYN will only match packets with the SYN flag set, and the ACK, FIN and RST flags unset.
@@ -147,3 +147,7 @@ iface enp0s10 inet static #下面的enp0s10网卡配置和上面的enp0s9几乎�
 - [Iptables State Module - NovaOrdis Knowledge Base](https://kb.novaordis.com/index.php/Iptables_State_Module)
 
 - [explainshell.com - iptables -A INPUT -p tcp --tcp-flags SYN,RST,ACK,FIN SYN -j ACCEPT # äquivalent zu: --syn](https://explainshell.com/explain?cmd=iptables+-A+INPUT+-p+tcp+--tcp-flags+SYN%2CRST%2CACK%2CFIN+SYN+-j+ACCEPT++%23+%C3%A4quivalent+zu%3A+--syn#)
+
+- [Port scanning using Scapy | Infosec Resources](https://resources.infosecinstitute.com/topic/port-scanning-using-scapy/)
+
+- [hashtaginfosec/portScan: Simple port scan scripts written in Python,](https://github.com/hashtaginfosec/portScan)
