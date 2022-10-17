@@ -12,11 +12,11 @@
 
   - [x] UDP scan
 
-- [ ] 上述每种扫描技术的实现测试均需要测试端口为：`开放`、`关闭`和`过滤`状态时的程序执行结果
+- [x] 上述每种扫描技术的实现测试均需要测试端口为：`开放`、`关闭`和`过滤`状态时的程序执行结果
 
-- [ ] 提供每一次扫描测试的抓包结果并分析与课本中的扫描方法原理是否相符？如果不同，试分析原因
+- [x] 提供每一次扫描测试的抓包结果并分析与课本中的扫描方法原理是否相符？如果不同，试分析原因
 
-- [ ] 在实验报告中详细说明实验网络环境拓扑、被测试IP的端口状态时如何模拟的
+- [x] 在实验报告中详细说明实验网络环境拓扑、被测试IP的端口状态时如何模拟的
 
 - [ ] (可选) 复刻`nmap`的上述扫描技术实现的命令行参数开关
 
@@ -233,6 +233,71 @@ flowchart TD
 
 ### 代码测试部分
 
+首先我觉得有必要把`iptables`的过滤规则放在这里，这样有问题的话也不太需要继续看下去了
+
+- TCP 8000端口
+
+  - ```bash
+    # DROP掉SYN包，用于过滤TCP Connect和TCP Stealth扫描
+    iptables -t raw -A PREROUTING -p tcp --dport 8000 --tcp-flags SYN,ACK,FIN,RST SYN -j DROP
+    # 添加检测PSH和URG，DROP掉FIN,PSH,URG包，用于过滤TCP Xmas扫描
+    iptables -t raw -A PREROUTING -p tcp --dport 8000 --tcp-flags SYN,ACK,FIN,RST,PSH,URG FIN,URG,PSH -j DROP
+    # 仅DROP掉FIN包，用于过滤TCP FIN扫描
+    iptables -t raw -A PREROUTING -p tcp --dport 8000 --tcp-flags SYN,ACK,FIN,RST FIN -j DROP
+    # 检测所有flags并DROP没有flag的包，用于过滤TCP NULL扫描
+    iptables -t raw -A PREROUTING -p tcp --dport 8000 --tcp-flags ALL NONE -j DROP
+    ```
+
+- UDP 67端口
+
+  - ```bash
+    # 匹配协议为UDP且目标端口为67则DROP
+    iptables -t raw -A PREROUTING -p udp --dport 67 -j DROP
+    ```
+
+诚然上面的这些过滤规则一旦生效，各自端口的服务估计也寄了，可能防火墙是这样的吧🤔
+
+其次是说明一下端口选择：
+
+- 对TCP扫描来说，首先22端口是SSH的端口，由于宿主机刚好通过SSH连接到`gateway-debian`虚拟机所以肯定是开放的，并且也不会设置过滤规则；然后是8000端口很显然是我在`gateway-debian`上通过命令`python3 -m http.server &`令其在后台以默认8000端口开了一个HTTP的服务器，对这个端口进行了上述非常完整的`iptables`TCP扫描规则过滤；8080端口则是一些网页服务器的备用端口，由于没有配置任何进程使用该端口，默认是关闭状态
+
+- 对UDP扫描来说，首先53端口是DNS端口，为了正常的域名解析该端口一定是开放的；然后是67端口，这个端口选择是搜索使用UDP协议的服务时偶然发现的，归属于DHCP服务，由于扫描期间也不会有新设备接入，于是选择对该端口设置`iptables`UDP扫描过滤规则；3389端口是RDP端口也就是常说的远程桌面，`gateway-debian`连GUI都没有，纯CLI的，自然也没有使用到该端口，于是默认是关闭状态
+
+#### TCP协议
+
+为了便于阅读，统一将结果绘制为表格：
+
+端口|22|8000|8080
+:-:|:-:|:-:|:-:
+真实状态|开放✅|设置过滤规则🚮|关闭⛔
+TCP Connect扫描结果|![screenShot](./img/tcpConnectScan22.png)|![screenShot](./img/tcpConnectScan8000.png)|![screenShot](./img/tcpConnectScan8080.png)
+TCP Stealth扫描结果|![screenShot](./img/tcpStealthScan22.png)|![screenShot](./img/tcpStealthScan8000.png)|![screenShot](./img/tcpStealthScan8080.png)
+TCP Xmas扫描结果|![screenShot](./img/tcpXmasScan22.png)|![screenShot](./img/tcpXmasScan8000.png)|![screenShot](./img/tcpXmasScan8080.png)
+TCP FIN扫描结果|![screenShot](./img/tcpFINscan22.png)|![screenShot](./img/tcpFINscan8000.png)|![screenShot](./img/tcpFINscan8080.png)
+TCP NULL扫描结果|![screenShot](./img/tcpNULLscan22.png)|![screenShot](./img/tcpNULLscan8000.png)|![screenShot](./img/tcpNULLscan8080.png)
+
+#### UDP协议
+
+相比上面各种TCP扫描简洁多了，仍然是以表格的形式：
+
+端口|真实状态|UDP扫描结果
+:-:|:-:|:-:
+53|开放✅|![screenShot](./img/udpScan53.png)
+67|设置过滤规则🚮|![screenShot](./img/udpScan67.png)
+3389|关闭⛔|![screenShot](./img/udpScan3389.png)
+
+### 抓包分析部分
+
+对于上述的扫描操作，都通过`tcpdump -i enp0s8 -w scanDump.pcap`进行了抓包保存，并在Windows宿主机上在本仓库文件夹>`chap0x05`>`pcap`文件夹下通过`scp debian:/root/scanDump.pcap ./scanDump.pcap`，原文件我也会一并上传
+
+关于分析数据包这块，说实话没什么头绪，整个实验折腾到最后的最后反而没有耐心去看具体抓到的包是什么情况😔
+
+下面是用Wireshark的流量图功能观看整个扫描测试过程，当然有使用包过滤规则`(tcp or udp or icmp) and not (ssdp or dhcp or mdns)`进行了筛选：
+
+![screenShot](./img/scanDump.png)
+
+我的感觉是没有什么问题，举例说明的话TCP的8000端口可以看到SYN包并没有回复，说明确实有被过滤掉，UDP则是非常清爽，除了3389端口确实Unreachable之外其他的一点反应都没有🤔
+
 ## 实验总结
 
 ### 各种踩坑
@@ -312,6 +377,14 @@ iface enp0s10 inet static #下面的enp0s10网卡配置和上面的enp0s9几乎�
 
 ### 一点心得
 
+说真的，这篇报告连续写了好几天，为了做这个实验也不得不先学习了很多别的知识，到最后针对就是累趴的感觉，有一点遗憾因为要到DDL了所以暂时没有进行个人复刻纸糊的虚假`nmap`，尤其是分开写的各个工具似乎都还挺稳定的情况下😔可能后续会找机会补上（一般这么说都很难再回过头折腾就是了）
+
+另外是通过这个实验确实学到了太多东西，何况还是在我这种并不是100%达到目的的情况下（这里是指通过个人理解的需要完成的点，可能老师那边会有更高层次的一些要求，但是在被告知之前并不能意识到）
+
+说点轻松的话题，这次学会了一些`iptables`的操作之后，总让我忍不住想去折腾看看家里的路由器😂（Merlin固件可是有的玩的，何况是Koolshare改版）毕竟到这次实验完成之前，也都只是用其自动化生成的一些规则，现在来看说不定能看懂一两条了也说不定
+
+结束，准备开PR！🎉
+
 ## 参考链接
 
 - [Usage — Scapy 2.5.0 documentation](https://scapy.readthedocs.io/en/latest/usage.html)
@@ -333,3 +406,5 @@ iface enp0s10 inet static #下面的enp0s10网卡配置和上面的enp0s9几乎�
 - [hashtaginfosec/portScan: Simple port scan scripts written in Python,](https://github.com/hashtaginfosec/portScan)
 
 - [LayerStack Tutorials - LayerStack - How to check if TCP / UDP port is open on Linux & Windows Cloud Servers](https://www.layerstack.com/resources/tutorials/How-to-check-if-TCP-UDP-port-is-open)
+
+- [Server Security - How to block Null Packets on a Linux Server - LopHost](https://www.lophost.com/tutorials/server-security-how-to-block-null-packets-on-a-linux-server/)
