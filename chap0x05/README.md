@@ -8,7 +8,7 @@
 
   - [x] TCP connect scan / TCP stealth scan
 
-  - [ ] TCP Xmas scan / TCP fin scan / TCP null scan
+  - [x] TCP Xmas scan / TCP fin scan / TCP null scan
 
   - [x] UDP scan
 
@@ -65,6 +65,21 @@ flowchart TD
 
 #### TCP Xmas扫描
 
+先写的TCP FIN扫描，于是这一块又是很多可以复制粘贴的代码内容😂
+
+不过确实也很像，和TCP FIN扫描的区别在于构造的TCP数据包拥有更多的flags，也就是PSH和URG标记，虽然判定上完全一致就是了
+
+以下是设计思路：
+
+```mermaid
+flowchart TD
+  A["向目标TCP端口发送Xmas包📶"]-->B{收到回复?}
+  B-->|收到RST|C["认为目标TCP端口关闭⛔"]
+  B-->|没有响应|D["认为目标TCP端口开放✅或被过滤🚮"]
+```
+
+当然，其中的Xmas包其实就是FIN,PSH,URG包
+
 #### TCP FIN扫描
 
 以下是设计思路：
@@ -79,6 +94,19 @@ flowchart TD
 判定逻辑上和下面的UDP扫描很像，但是好在是TCP协议，可靠度大大提升了😮
 
 #### TCP NULL扫描
+
+仍然是很多复制粘贴，实在没办法，TCP FIN、Xmas和NULL扫描的逻辑完全是一样的
+
+以下是设计思路：
+
+```mermaid
+flowchart TD
+  A["向目标TCP端口发送NULL包📶"]-->B{收到回复?}
+  B-->|收到RST|C["认为目标TCP端口关闭⛔"]
+  B-->|没有响应|D["认为目标TCP端口开放✅或被过滤🚮"]
+```
+
+其中NULL包是flags被设置为0的TCP包
 
 #### UDP扫描
 
