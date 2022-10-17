@@ -22,6 +22,116 @@
 
 ## 实验环境
 
+### 编程环境
+
+- Python 3.10.X
+
+- Scapy 2.4.5
+
+  - ```powershell
+                         aSPY//YASa
+                 apyyyyCY//////////YCa       |
+                sY//////YSpcs  scpCY//Pp     | Welcome to Scapy
+    ayp a yyyyyyySCP//Pp           syY//C    | Version 2.4.5
+    AYAs AYYYYYYYY///Ps              cY//S   |
+             pCCCCY//p          cSSps y//Y   | https://github.com/secdev/scapy
+             SPPPP///a          pP///AC//Y   |
+                  A//A            cyP////C   | Have fun!
+                  p///Ac            sC///a   |
+                  P////YCpc           A//A   | We are in France, we say Skappee.
+           scccccp///pSP///p          p//Y   | OK? Merci.
+          sY/////////y  caa           S//P   |             -- Sebastien Chabal
+           cayCyayP//Ya              pY/Ya   |
+             sY/PsY////YCc          aC//Yp
+              sc  sccaCY//PCypaapyCP//YSs
+                       spCPY//////YPSps
+                           ccaacs
+    ```
+
+### 测试平台
+
+- Kali Rolling on WSL 0.70.0.0 (作为扫描者)
+
+  - ```neofetch
+    $ neofetch
+    ..............                                     leaf@ZephyrusG15
+                ..,;:ccc,.                             ----------------
+              ......''';lxO.                           OS: Kali GNU/Linux Rolling on Windows 10 x86_64
+    .....''''..........,:ld;                           Kernel: 5.15.68.1-microsoft-standard-WSL2
+               .';;;:::;,,.x,                          Uptime: 1 day, 18 hours, 35 mins
+          ..'''.            0Xxoc:,.  ...              Packages: 2792 (dpkg)
+      ....                ,ONkc;,;cokOdc',.            Shell: bash 5.2.0
+     .                   OMo           ':ddo.          Theme: Kali-Dark [GTK2], adw-gtk3-dark [GTK3]
+                        dMc               :OO;         Icons: Flat-Remix-Blue-Dark [GTK2/3]
+                        0M.                 .:o.       Terminal: Windows Terminal
+                        ;Wd                            CPU: AMD Ryzen 9 4900HS with Radeon Graphics (16) @ 2.994GHz
+                         ;XO,                          GPU: 28b8:00:00.0 Microsoft Corporation Basic Render Driver
+                           ,d0Odlc;,..                 Memory: 538MiB / 7650MiB
+                              ..',;:cdOOd::,.
+    ```
+
+- Debian 10 on VirtualBox 7.0.0 (作为被扫描者)
+
+  - ```neofetch
+    # neofetch
+           _,met$$$$$gg.          root@debian
+        ,g$$$$$$$$$$$$$$$P.       -----------
+      ,g$$P"     """Y$$.".        OS: Debian GNU/Linux 10 (buster) x86_64
+     ,$$P'              `$$$.     Host: VirtualBox 1.2
+    ',$$P       ,ggs.     `$$b:   Kernel: 4.19.0-22-amd64
+    `d$$'     ,$P"'   .    $$$    Uptime: 20 hours, 9 mins
+     $$P      d$'     ,    $$P    Packages: 462 (dpkg)
+     $$:      $$.   -    ,d$$'    Shell: bash 5.0.3
+     $$;      Y$b._   _,d$P'      Terminal: /dev/pts/0
+     Y$$.    `.`"Y$$$$P"'         CPU: AMD Ryzen 9 4900HS with Radeon Graphics (1) @ 2.994GHz
+     `$$b      "-.__              GPU: VMware SVGA II Adapter
+      `Y$$                        Memory: 76MiB / 987MiB
+       `Y$$.
+        `$$b.
+          `Y$$b.
+             `"Y$b._
+                  `"""
+    ```
+
+### “全新”的网络拓扑结构
+
+是的，上面的测试平台其实已经在暗示了这次实验网络拓扑的诡异性：
+
+>用Windows的Linux子系统安装的Kali进行扫描，流量通过WSL的虚拟网卡转出再由VirtualBox的Host-Only网卡转入，最后到达被扫描主机`gateway-debian`（老面孔了，第一次实验那会儿搭起来的Debian10）
+
+下面是在Kali上`traceroute`到`gateway-debian`IP的输出结果：
+
+```bash
+# gateway-debian的IP地址为192.168.56.113
+$ traceroute 192.168.56.113
+traceroute to 192.168.56.113 (192.168.56.113), 30 hops max, 60 byte packets
+ 1  ZephyrusG15.mshome.net (172.17.176.1)  1.647 ms  1.126 ms  0.757 ms
+ 2  192.168.56.113 (192.168.56.113)  2.609 ms  3.493 ms  3.124 ms
+```
+
+可以看到，其实仅经过了两跳，并且两台“虚拟机”的网络也属于完全内网，符合相关法律要求😂
+
+### 被扫描端口状态模拟
+
+这一块其实挺有趣的，因为并不需要每次扫描一个端口，然后每次配置过滤规则，只需要选好已知的TCP端口和UDP端口各3个，分别对应`开放`、`关闭`和`过滤`的状态即可，在分别测试不同方式的扫描时分别扫描不同状态的端口就达到目的了，具体的端口选择和状态分配可以看下面的图示：
+
+```mermaid
+flowchart TD
+A[选择扫描协议]-->B{TCP or UDP?}
+B-->|TCP|C[选择目标端口]
+B-->|UDP|D[选择目标端口]
+C-->E{22 or 8000 or 8080?}
+D-->F{53 or 67 or 3389?}
+E-->|Port 22|G["SSH端口:开放✅"]
+E-->|Port 8000|H["Python http.server端口:设置过滤规则🚮"]
+E-->|Port 8080|I["HTTP服务备用端口:关闭⛔"]
+F-->|Port 53|J["DNS端口:开放✅"]
+F-->|Port 67|K["DHCP端口:设置过滤规则🚮"]
+F-->|Port 3389|L["远程桌面端口:关闭⛔"]
+```
+
+应该有一图胜千言的效果吧🤔
+
 ## 实验记录
 
 ### 代码编写部分
@@ -221,3 +331,5 @@ iface enp0s10 inet static #下面的enp0s10网卡配置和上面的enp0s9几乎�
 - [Port scanning using Scapy | Infosec Resources](https://resources.infosecinstitute.com/topic/port-scanning-using-scapy/)
 
 - [hashtaginfosec/portScan: Simple port scan scripts written in Python,](https://github.com/hashtaginfosec/portScan)
+
+- [LayerStack Tutorials - LayerStack - How to check if TCP / UDP port is open on Linux & Windows Cloud Servers](https://www.layerstack.com/resources/tutorials/How-to-check-if-TCP-UDP-port-is-open)
