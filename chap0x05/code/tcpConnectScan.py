@@ -32,7 +32,7 @@ def tcpConnectScan(targetIP,targetPort):
         ss.send(RSTpacket)
 
 if __name__=='__main__':
-    if len(argv)<2:
+    if len(argv)<3:
         print("ATTENTION: Super User Privilege required!!!")
         print("Usage: python tcpConnectScan.py [target IP] [target port]")
     else:
