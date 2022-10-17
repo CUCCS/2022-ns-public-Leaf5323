@@ -11,7 +11,7 @@ def createRSTpacket(destinationIP,destinationPort):
     return packet
 
 def tcpSYNscan(targetIP,targetPort):
-    print("⫸ Seding TCP SYN packet...")
+    print("⫸ Sending TCP SYN packet...")
     SYNpacket=createSYNpacket(destinationIP=targetIP,destinationPort=targetPort)
     gotAnswer=ss.sr1(SYNpacket,timeout=10)
     if not gotAnswer:
