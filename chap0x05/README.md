@@ -67,6 +67,17 @@ flowchart TD
 
 #### TCP FIN扫描
 
+以下是设计思路：
+
+```mermaid
+flowchart TD
+  A["向目标TCP端口发送FIN包📶"]-->B{收到回复?}
+  B-->|收到RST|C["认为目标TCP端口关闭⛔"]
+  B-->|没有响应|D["认为目标TCP端口开放✅或被过滤🚮"]
+```
+
+判定逻辑上和下面的UDP扫描很像，但是好在是TCP协议，可靠度大大提升了😮
+
 #### TCP NULL扫描
 
 #### UDP扫描
