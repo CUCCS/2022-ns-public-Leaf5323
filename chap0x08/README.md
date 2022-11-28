@@ -74,15 +74,16 @@ $IPT -t nat -A POSTROUTING -s 172.16.18.1/24 -o eth0 -j MASQUERADE
 
 ### 实验任务要求
 
-- 请对以上脚本逐行添加代码注释
-- host-1可以ping通ip: 172.16.18.1吗？
-- host-1可以ping通ip: 192.168.1.1吗？
-- host-1可以ping通域名: www.baidu.com吗？
-- host-1可以访问： `http://www.baidu.com` 吗？
-- host-1可以访问：`http://61.135.169.121` 吗？
-- host-3可以ping通ip: 172.16.18.1吗？
-- host-3可以ping通ip: 192.168.1.1吗？
-- host-3可以访问互联网吗？
+- [x] 请对以上脚本逐行添加代码注释
+- [x] 回答问题：
+  - host-1可以ping通ip: 172.16.18.1吗？
+  - host-1可以ping通ip: 192.168.1.1吗？
+  - host-1可以ping通域名: www.baidu.com吗？
+  - host-1可以访问： `http://www.baidu.com` 吗？
+  - host-1可以访问：`http://61.135.169.121` 吗？
+  - host-3可以ping通ip: 172.16.18.1吗？
+  - host-3可以ping通ip: 192.168.1.1吗？
+  - host-3可以访问互联网吗？
 
 ## 实验记录
 
